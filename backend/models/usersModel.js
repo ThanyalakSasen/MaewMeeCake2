@@ -97,14 +97,14 @@ const userSchema = new Schema({
     }
   },
 
-  employee_salary: {
+  emp_salary: {
     type: Number,
     required: function () {
       return this.role === 'Employee'
     }
   },
 
-  employee_status: {
+  emp_status: {
     type: String,
     enum: ['Active', 'Inactive'],
     default: 'Active'
@@ -113,6 +113,10 @@ const userSchema = new Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  softDelete: {
+    type: Boolean,
+    default: false
   },
   resetPasswordToken: {
     type: String,

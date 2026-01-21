@@ -16,6 +16,8 @@ require("./models/usersModel");
 
 const authRoutes = require("./routes/authRoutes");
 const emailRoutes = require("./routes/emailRoutes");
+const ingredientRoutes = require("./routes/ingredientRoutes");
+
 
 
 
@@ -62,6 +64,7 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/email", emailRoutes);
+app.use('/api/ingredients', ingredientRoutes);
 
 
 

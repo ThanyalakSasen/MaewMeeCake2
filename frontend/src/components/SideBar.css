@@ -1,0 +1,28 @@
+.sidebar-link {
+  color: black;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-link:hover {
+  background-color: #ffca45;
+  color: black;
+}
+
+.sidebar-sub-link {
+  font-size: 14px;
+  color: black;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-sub-link:hover {
+  background-color: #ffca45;
+  color: black;
+}
+.sidebar-active {
+  background-color: #ffca45;
+  color: black;
+}

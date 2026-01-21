@@ -10,12 +10,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@coreui/icons": "^3.0.1",
+    "@coreui/icons-react": "^2.3.0",
+    "@coreui/react": "^5.9.2",
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@react-oauth/google": "^0.13.4",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "google-auth-library": "^10.5.0",
@@ -29,6 +33,7 @@
     "react-bootstrap": "^2.10.10",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.0",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^7.12.0",
     "sweetalert2": "^11.26.17"
   },

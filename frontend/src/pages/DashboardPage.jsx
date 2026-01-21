@@ -1,11 +1,20 @@
-import { useEffect, useState  } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Navbar, Nav, Dropdown, Spinner } from "react-bootstrap";
+import {
+  Container,
+  Navbar,
+  Nav,
+  Dropdown,
+  Spinner,
+  Row,
+  Col,
+} from "react-bootstrap";
 import AdminDashboardComponent from "../components/AdminDashboardComponent";
-import {CustomerDashboardComponent} from "../components/CustomerDashboardComponent";
-import {EmployeeDashboardComponent} from "../components/EmployeeDashboardComponent";
+import { CustomerDashboardComponent } from "../components/CustomerDashboardComponent";
+import { EmployeeDashboardComponent } from "../components/EmployeeDashboardComponent";
 import NavBar from "../components/NavBar";
 import { authAPI } from "../services/authService";
+import SideBarMenu from "../components/SideBarMenu";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -16,7 +25,6 @@ export default function Dashboard() {
   useEffect(() => {
     const initDashboard = async () => {
       try {
-        
         // Check if token exists
         const token = localStorage.getItem("token");
         if (!token) {
@@ -38,7 +46,8 @@ export default function Dashboard() {
         // Fetch current user from API to ensure data is up-to-date
         const response = await authAPI.getCurrentUser();
         if (response && response.success) {
-          const userData = response.user || (response.data && response.data.user);
+          const userData =
+            response.user || (response.data && response.data.user);
           if (userData) {
             // 🔴 ตรวจสอบว่ากรอกข้อมูลครบหรือยัง (สำหรับ Google Login)
             if (userData.profileCompleted === false) {
@@ -65,31 +74,31 @@ export default function Dashboard() {
     initDashboard();
   }, [navigate, setUser]);
 
-
-
   const renderDashboardContent = () => {
     if (!user) return null;
 
     const role = user.role.toLowerCase();
 
     switch (role) {
-      case 'owner':
+      case "owner":
         return <AdminDashboardComponent />;
-      case 'employee':
+      case "employee":
         return <EmployeeDashboardComponent />;
-      case 'customer':
+      case "customer":
         return <CustomerDashboardComponent />;
       default:
         return (
           <Container style={{ textAlign: "center", padding: "60px 20px" }}>
-            <div style={{
-              backgroundColor: "white",
-              padding: "40px",
-              borderRadius: "12px",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-              maxWidth: "500px",
-              margin: "0 auto"
-            }}>
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: "40px",
+                borderRadius: "12px",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                maxWidth: "500px",
+                margin: "0 auto",
+              }}
+            >
               <h3 style={{ marginBottom: "16px" }}>ไม่พบข้อมูลผู้ใช้</h3>
               <p style={{ color: "#666", marginBottom: "24px" }}>
                 ระบบไม่สามารถระบุบทบาทของคุณได้
@@ -103,18 +112,21 @@ export default function Dashboard() {
   // Loading state
   if (loading) {
     return (
-      <Container 
-        fluid 
-        style={{ 
-          display: "flex", 
+      <Container
+        style={{
+          display: "flex",
           flexDirection: "column",
-          justifyContent: "center", 
-          alignItems: "center", 
+          justifyContent: "center",
+          alignItems: "center",
           height: "100vh",
-          backgroundColor: "#f8f9fa"
+          backgroundColor: "#f8f9fa",
         }}
       >
-        <Spinner animation="border" variant="warning" style={{ width: "60px", height: "60px" }} />
+        <Spinner
+          animation="border"
+          variant="warning"
+          style={{ width: "60px", height: "60px" }}
+        />
         <p style={{ marginTop: "20px", color: "#666", fontSize: "18px" }}>
           กำลังโหลดข้อมูล...
         </p>
@@ -125,29 +137,35 @@ export default function Dashboard() {
   // Error state
   if (error) {
     return (
-      <Container 
-        fluid 
-        style={{ 
-          display: "flex", 
+      <Container
+        fluid
+        style={{
+          display: "flex",
           flexDirection: "column",
-          justifyContent: "center", 
-          alignItems: "center", 
+          justifyContent: "center",
+          alignItems: "center",
           height: "100vh",
-          backgroundColor: "#f8f9fa"
+          backgroundColor: "#f8f9fa",
         }}
       >
-        <div style={{
-          backgroundColor: "white",
-          padding: "40px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-          maxWidth: "500px",
-          textAlign: "center"
-        }}>
-          <div style={{ fontSize: "60px", color: "#dc3545", marginBottom: "20px" }}>
+        <div
+          style={{
+            backgroundColor: "white",
+            padding: "40px",
+            borderRadius: "12px",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+            maxWidth: "500px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{ fontSize: "60px", color: "#dc3545", marginBottom: "20px" }}
+          >
             ✕
           </div>
-          <h3 style={{ marginBottom: "16px", color: "#dc3545" }}>เกิดข้อผิดพลาด</h3>
+          <h3 style={{ marginBottom: "16px", color: "#dc3545" }}>
+            เกิดข้อผิดพลาด
+          </h3>
           <p style={{ color: "#666", marginBottom: "24px" }}>{error}</p>
           <p style={{ color: "#999", fontSize: "14px" }}>
             กำลังนำคุณกลับไปหน้าเข้าสู่ระบบ...
@@ -158,12 +176,23 @@ export default function Dashboard() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
-      <NavBar user={user} />
-      {/* Dashboard Content */}
-      <Container fluid style={{ padding: "40px" }}>
-        {renderDashboardContent()}
-      </Container>
-    </div>
+    <Container fluid style={{ minHeight: "100vh", backgroundColor: "#F0F0FA" }}>
+      <Row>
+        {/* Sidebar */}
+        <Col md={2} className="p-0 bg-white">
+          <SideBarMenu />
+        </Col>
+
+        {/* Main */}
+        <Col md={10} className="p-0">
+          <NavBar />
+          <Row>
+            <Col>
+                {renderDashboardContent()}
+            </Col>
+          </Row>
+        </Col>
+      </Row>
+    </Container>
   );
 }
