@@ -11,6 +11,7 @@ frontend
     7. npm install @react-oauth/google sweetalert2
     8. npm install @coreui/react @coreui/icons @coreui/icons-react
     9. npm install react-icons
+    10. npx create-react-app random-password-generator
 
 
 backend 

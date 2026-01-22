@@ -12,7 +12,7 @@ interface SelectProps {
     disabled?: boolean;
 }
 
-export const Select = ({
+export const SelectInput = ({
     label,
     name,
     options,
