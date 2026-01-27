@@ -1,26 +1,55 @@
+import { useState, useEffect } from "react";
 import SideBarMenu from "../components/SideBarMenu";
 import NavBar from "../components/NavBar";
 import Table from "react-bootstrap/Table";
-import { Container, Row, Col, Button } from "react-bootstrap";
+import { Container, Row, Col, Button, Spinner, Alert } from "react-bootstrap";
 import { InputField } from "../components/InputField";
-import ButtonSubmit from "../components/button";
 import { useNavigate } from "react-router-dom";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
+import api from "../services/api";
 
 export default function EmployeeManage() {
   const navigate = useNavigate();
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/auth/admin/employees");
+      if (response.data.success) {
+        setEmployees(response.data.data);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "เกิดข้อผิดพลาดในการดึงข้อมูล");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredEmployees = employees.filter((emp) =>
+    emp.user_fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.emp_id?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Container fluid className="p-0" style={{ minHeight: "100vh" }}>
       <Row className="g-0" style={{ minHeight: "100vh" }}>
         
         {/* Sidebar */}
-        <Col md={2} lg={2} className="bg-white">
+        <Col md={3} lg={3} className="bg-white">
           <SideBarMenu />
         </Col>
 
         {/* Content */}
-        <Col md={10} lg={10} style={{ backgroundColor: "#F0F0FA" }}>
+        <Col md={9} lg={9} style={{ backgroundColor: "#F0F0FA" }}>
           
           {/* Navbar */}
           <div className="p-3">
@@ -36,11 +65,17 @@ export default function EmployeeManage() {
               margin: "0 20px 20px",
             }}
           >
-            <Row className="align-items-center">
+            <Row className="align-items-center p-0 w-80">
               <Col md={6}>
-                <form style={{ display: "flex", gap: "10px" }}>
-                  <InputField />
-                  <ButtonSubmit textButton="ค้นหา" />
+                <form
+                  style={{ display: "flex", gap: "10px" }}
+                  onSubmit={(e) => e.preventDefault()}
+                >
+                  <InputField
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="ค้นหาชื่อ, อีเมล, รหัสพนักงาน"
+                  />
                 </form>
               </Col>
               <Col md={6} className="text-end">
@@ -74,20 +109,47 @@ export default function EmployeeManage() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>1</td>
-                  <td>Mark Otto</td>
-                  <td>mark@mail.com</td>
-                  <td>099-999-9999</td>
-                  <td>
-                    <Button size="sm" variant="warning" className="me-2">
-                      <FiEdit /> แก้ไข
-                    </Button>
-                    <Button size="sm" variant="danger">
-                      <FiTrash2 /> ลบ
-                    </Button>
-                  </td>
-                </tr>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="text-center">
+                      <Spinner animation="border" />
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan="5">
+                      <Alert variant="danger">{error}</Alert>
+                    </td>
+                  </tr>
+                ) : filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="text-center">
+                      ไม่พบข้อมูลพนักงาน
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEmployees.map((employee) => (
+                    <tr key={employee._id}>
+                      <td>{employee.emp_id || "-"}</td>
+                      <td>{employee.user_fullname}</td>
+                      <td>{employee.email}</td>
+                      <td>{employee.user_phone || "-"}</td>
+                      <td>
+                        <Button
+                          size="sm"
+                          variant="warning"
+                          className="me-2"
+                          onClick={() => navigate(`/update-employee/${employee._id}`)}
+                        >
+                          <FiEdit /> แก้ไข
+                        </Button>
+                        <Button size="sm" variant="danger">
+                          <FiTrash2 /> ลบ
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </Table>
           </div>

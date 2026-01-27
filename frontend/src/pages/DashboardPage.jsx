@@ -179,12 +179,12 @@ export default function Dashboard() {
     <Container fluid style={{ minHeight: "100vh", backgroundColor: "#F0F0FA" }}>
       <Row>
         {/* Sidebar */}
-        <Col md={2} className="p-0 bg-white">
+        <Col md={3} className="p-0 bg-white">
           <SideBarMenu />
         </Col>
 
         {/* Main */}
-        <Col md={10} className="p-0">
+        <Col md={9} className="p-0">
           <NavBar />
           <Row>
             <Col>

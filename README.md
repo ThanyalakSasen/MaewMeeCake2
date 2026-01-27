@@ -5,6 +5,7 @@ frontend
     1. npm install 
     2. npm install react-router-dom 
     3. npm install react-bootstrap bootstrap 
+    4. npm install react-bootstrap-icons
     4. npm install axios 
     5. npm install react-datepicker 
     6. npm install @fortawesome/fontawesome-free
@@ -20,11 +21,13 @@ backend
     2. npm install mongoose 
     3. npm install nodemon --save-dev 
     4. npm install bcryptjs 
+    5. npm install multer //อัปโหลดรูปได้
     5. npm install express passport passport-local passport-google-oauth20 
     6. npm install helmet 
     7. npm install google-auth-library 
     8. npm install nodemailer
     9. npm install jsonwebtoken
+    10. npm install fuse.js
 
 
 

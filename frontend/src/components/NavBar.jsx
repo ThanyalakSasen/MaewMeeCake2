@@ -1,9 +1,12 @@
 import { Container, Navbar, Nav, Dropdown, Spinner } from "react-bootstrap";
 import { authAPI } from "../services/authService";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-export default function NavBar({ user, titleMain}) {
+export default function NavBar({ titleMain }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const handleLogout = async () => {
     try {
       await authAPI.logout();

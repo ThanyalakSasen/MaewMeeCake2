@@ -266,6 +266,9 @@ exports.login = async (req, res, next) => {
     }
 
     console.log("Login Debug: User found, hashing comparison starts...");
+    console.log("Login Debug: Password from request:", password);
+    console.log("Login Debug: Password hash in DB:", user.password);
+    console.log("Login Debug: Password hash starts with $2:", user.password.startsWith('$2'));
 
     // ตรวจสอบว่าเป็น local account หรือไม่
     if (user.authProvider !== "local" || !user.password) {
@@ -858,28 +861,33 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
+// @desc    สร้างผู้ใช้ใหม่ (Employee หรือ Customer) โดย Admin
+// @route   POST /api/auth/admin/create-user
+// @access  Private (Admin only)
 exports.createEmployee = async (req, res, next) => {
   try {
     const {
+      emp_id,
       user_fullname,
       email,
       password,
       authProvider = "local",
       user_phone,
       user_birthdate,
-      role = "Employee",
-      user_img,
-      isEmailVerified = false,
+      role,
+      isEmailVerified = true,
+      profileCompleted = true,
       emp_position,
       start_working_date,
       employment_type,
       emp_salary,
-      emp_status,
+      partTimeHours,
+      emp_status = "Active",
       softDelete = false,
     } = req.body;
 
     // Validation
-    if (!user_fullname || !email || !password) {
+    if (!user_fullname || !email || !password || !role) {
       return res.status(400).json({
         success: false,
         message: "กรุณากรอกข้อมูลให้ครบถ้วน",
@@ -901,26 +909,8 @@ exports.createEmployee = async (req, res, next) => {
       });
     }
 
-    // สร้าง emp_id แบบใหม่
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-
-    // หาลำดับพนักงานในปีนี้
-    const yearPrefix = `emp${year}`;
-    const employeesThisYear = await UserModel.countDocuments({
-      emp_id: { $regex: `^${yearPrefix}` },
-    });
-
-    // ลำดับถัดไป (เริ่มจาก 1)
-    const sequence = String(employeesThisYear + 1).padStart(3, "0");
-
-    // สร้าง emp_id รูปแบบ: emp + ปี(4) + เดือน(2) + วัน(2) + ลำดับ(3)
-    const emp_id = `${yearPrefix}${month}${day}${sequence}`;
-
-    // สร้าง user ใหม่
-    const user = await UserModel.create({
+    // เตรียมข้อมูลผู้ใช้
+    const userData = {
       emp_id,
       user_fullname,
       email,
@@ -929,20 +919,60 @@ exports.createEmployee = async (req, res, next) => {
       user_phone,
       user_birthdate,
       role,
-      user_img,
       isEmailVerified,
-      emp_position,
-      start_working_date,
-      employment_type,
-      emp_salary,
-      emp_status,
+      profileCompleted,
       softDelete,
       isActive: true,
-    });
+    };
+
+    // เพิ่ม path ของรูปภาพถ้ามีการอัพโหลด
+    if (req.file) {
+      userData.user_img = `/uploads/users/${req.file.filename}`;
+    }
+
+    // ถ้าเป็น Employee ให้สร้าง emp_id และเพิ่มข้อมูลพนักงาน
+    if (role === "Employee") {
+      // สร้าง emp_id
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+
+      // หาลำดับพนักงานในปีนี้
+      const yearPrefix = `emp${year}`;
+      const employeesThisYear = await UserModel.countDocuments({
+        emp_id: { $regex: `^${yearPrefix}` },
+      });
+
+      // ลำดับถัดไป (เริ่มจาก 1)
+      const sequence = String(employeesThisYear + 1).padStart(3, "0");
+
+      // สร้าง emp_id รูปแบบ: emp + ปี(4) + เดือน(2) + วัน(2) + ลำดับ(3)
+      userData.emp_id = `${yearPrefix}${month}${day}${sequence}`;
+      userData.emp_position = emp_position;
+      userData.start_working_date = start_working_date;
+      userData.employment_type = employment_type;
+      userData.emp_status = emp_status;
+
+      // ถ้าเป็น Full-time ให้ใส่เงินเดือน
+      if (employment_type === "Full-time") {
+        userData.emp_salary = emp_salary;
+      }
+
+      // ถ้าเป็น Part-time ให้ใส่ชั่วโมงทำงาน
+      if (employment_type === "Part-time" && partTimeHours) {
+        userData.partTimeHours = partTimeHours;
+      }
+    }
+
+    // สร้าง user ใหม่
+    console.log("Creating user with password:", password);
+    const user = await UserModel.create(userData);
+    console.log("User created successfully, password hashed:", user.password);
 
     res.status(201).json({
       success: true,
-      message: "สร้างพนักงานใหม่สำเร็จ",
+      message: `เพิ่ม${role === "Employee" ? "พนักงาน" : "ลูกค้า"}สำเร็จ`,
       user: {
         id: user._id,
         emp_id: user.emp_id,
@@ -953,10 +983,37 @@ exports.createEmployee = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error("Create Employee Error:", error);
+    console.error("Create User Error:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "เกิดข้อผิดพลาดในการสร้างพนักงาน",
+      message: error.message || "เกิดข้อผิดพลาดในการสร้างผู้ใช้",
+    });
+  }
+};
+
+// @desc    ดึงรายชื่อพนักงานทั้งหมด
+// @route   GET /api/auth/admin/employees
+// @access  Private (Admin only)
+exports.getEmployees = async (req, res, next) => {
+  try {
+    const employees = await UserModel.find({
+      role: "Employee",
+      isActive: true,
+      softDelete: false,
+    })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: employees.length,
+      data: employees,
+    });
+  } catch (error) {
+    console.error("Get Employees Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "เกิดข้อผิดพลาดในการดึงข้อมูลพนักงาน",
     });
   }
 };

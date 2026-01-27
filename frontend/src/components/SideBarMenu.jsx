@@ -85,24 +85,34 @@ function SideBarMenu() {
   }, []);
 
   const MenuContent = () => (
-    <Nav className="flex-column">
-      {ListSideBarMenu.map((item, index) => (
-        <div key={index}>
-          <Nav.Link
-            onClick={() => item.subMenu && toggleMenu(index)}
-            href={!item.subMenu ? item.link : undefined}
-            style={{ fontWeight: 500, cursor: "pointer", color: "black" }}
-          >
-            {item.name}
-          </Nav.Link>
+  <Nav className="flex-column sidebar-menu">
+    {ListSideBarMenu.map((item, index) => {
+      const isOpen = openIndex === index;
 
-          {item.subMenu && openIndex === index && (
-            <div style={{ paddingLeft: "20px" }}>
+      return (
+        <div key={index} className="sidebar-item">
+          <div
+            className={`sidebar-item-header ${isOpen ? "active" : ""}`}
+            onClick={() => item.subMenu && toggleMenu(index)}
+          >
+            <span className="sidebar-item-title">
+              {item.name}
+            </span>
+
+            {item.subMenu && (
+              <span className={`chevron ${isOpen ? "rotate" : ""}`}>
+                ▾
+              </span>
+            )}
+          </div>
+
+          {item.subMenu && isOpen && (
+            <div className="sidebar-submenu">
               {item.subMenu.map((sub, i) => (
                 <Nav.Link
                   key={i}
                   href={sub.link}
-                  style={{ fontSize: "14px", color: "black" }}
+                  className="sidebar-submenu-item"
                   onClick={() => setShow(false)}
                 >
                   {sub.name}
@@ -111,9 +121,11 @@ function SideBarMenu() {
             </div>
           )}
         </div>
-      ))}
-    </Nav>
-  );
+      );
+    })}
+  </Nav>
+);
+
 
   return (
     <>
@@ -140,7 +152,7 @@ function SideBarMenu() {
 
       {/* Sidebar (Desktop) */}
       {!isMobile && (
-        <div style={{ background: "#fff", padding: "16px", height: "100vh" }}>
+        <div style={{ background: "#fff", padding: "10%", height: "100vh" }}>
           <img
             src={logoMaewMeeCake}
             alt="Logo"
