@@ -2,10 +2,11 @@ import { useState } from "react";
 import { InputField } from "../components/InputField";
 import InputDate from "../components/inputDate";
 import SideBarMenu from "../components/SideBarMenu";
-import { SelectInput } from "../components/select";
+import { SelectInput } from "../components/selectInput";
 import ImageUpload from "../components/imageUploadComponent";
 import NavBar from "../components/NavBar";
 import { Row, Col, Alert, Spinner } from "react-bootstrap";
+import Swal from "sweetalert2";
 import api from "../services/api";
 
 export default function CreateUserForAdmin() {
@@ -86,6 +87,7 @@ export default function CreateUserForAdmin() {
     return null;
   };
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
@@ -114,6 +116,29 @@ export default function CreateUserForAdmin() {
       }
     }
 
+    // แสดง SweetAlert2 เพื่อยืนยัน
+    const result = await Swal.fire({
+      title: "ยืนยันการสร้างผู้ใช้งาน",
+      html: `
+        <div style="text-align: left;">
+          <p><strong>ชื่อ:</strong> ${fullname}</p>
+          <p><strong>อีเมล:</strong> ${email}</p>
+          <p><strong>บทบาท:</strong> ${role}</p>
+          ${role === "Employee" ? `<p><strong>ประเภทพนักงาน:</strong> ${employeeType}</p>` : ""}
+        </div>
+      `,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "ยืนยัน",
+      cancelButtonText: "ยกเลิก",
+      reverseButtons: true,
+    });
+
+    // ถ้ากด Cancel
+    if (!result.isConfirmed) return;
+
     try {
       setIsLoading(true);
 
@@ -138,7 +163,7 @@ export default function CreateUserForAdmin() {
         formData.append("user_img", image);
       }
 
-      // ถ้าเป็น Employee ให้เพิ่มข้อมูลพนักงาน
+      // Employee ให้เพิ่มข้อมูลพนักงาน
       if (role === "Employee") {
         formData.append("emp_position", position);
         formData.append("start_working_date", formatDateToISO(startWorkDate));
@@ -169,32 +194,48 @@ export default function CreateUserForAdmin() {
       );
 
       if (response.data.success) {
-        setSuccessMessage(
-          `เพิ่มผู้ใช้สำเร็จ! รหัสผ่านคือ: ${password} (กรุณาบันทึกไว้)`
-        );
+        // แสดง SweetAlert2 สำเร็จพร้อมรหัสผ่าน
+        await Swal.fire({
+          icon: "success",
+          title: "เพิ่มผู้ใช้สำเร็จ!",
+          html: `
+            <div style="text-align: center;">
+              <p>สร้างบัญชีผู้ใช้เรียบร้อยแล้ว</p>
+              <hr>
+              <p><strong>รหัสผ่านชั่วคราว:</strong></p>
+              <p style="font-size: 24px; color: #3085d6; font-weight: bold;">${password}</p>
+              <p style="color: #d33; font-size: 14px;">⚠️ กรุณาบันทึกรหัสผ่านนี้ไว้</p>
+            </div>
+          `,
+          confirmButtonText: "ตกลง",
+          confirmButtonColor: "#3085d6",
+        });
 
         // รีเซ็ตฟอร์ม
-        setTimeout(() => {
-          setFullname("");
-          setEmail("");
-          setPhone("");
-          setDateOfBirth("");
-          setRole("");
-          setPosition("");
-          setStartWorkDate("");
-          setEmployeeType("");
-          setEmployeeSalary("");
-          setPartTimeHours("");
-          setPassword("");
-          setImage(null);
-          setSuccessMessage("");
-        }, 10000);
+        setFullname("");
+        setEmail("");
+        setPhone("");
+        setDateOfBirth("");
+        setRole("");
+        setPosition("");
+        setStartWorkDate("");
+        setEmployeeType("");
+        setEmployeeSalary("");
+        setPartTimeHours("");
+        setPassword("");
+        setImage(null);
       }
     } catch (error) {
       console.error("Create User Error:", error);
-      setErrorMessage(
-        error.response?.data?.message || "เกิดข้อผิดพลาดในการเพิ่มผู้ใช้"
-      );
+      
+      // แสดง SweetAlert2 สำหรับข้อผิดพลาด
+      await Swal.fire({
+        icon: "error",
+        title: "เกิดข้อผิดพลาด",
+        text: error.response?.data?.message || "ไม่สามารถเพิ่มผู้ใช้ได้",
+        confirmButtonText: "ตกลง",
+        confirmButtonColor: "#d33",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -213,7 +254,7 @@ export default function CreateUserForAdmin() {
           <Col md={10} className="w-100">
             <div className="p-4 bg-white rounded">
               <form onSubmit={handleSubmit}>
-                {/* ✅ แก้ไข: เพิ่ม onChange handler หรือใช้แบบไม่ควบคุม */}
+                {/* เพิ่ม onChange handler หรือใช้แบบไม่ควบคุม */}
                 <Row className="m-4 align-items-center">
                   <ImageUpload 
                     image={image} 

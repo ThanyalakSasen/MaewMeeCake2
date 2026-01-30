@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import authAPI from "../services/authService";
 import { InputField } from "../components/InputField";
 import InputDate from "../components/inputDate";
-import { Select } from "../components/select";
+import { SelectInput } from "../components/selectInput";
 import ButtonSubmit from "../components/button";
 import axios from "axios";
 import { Col, Container, Row, Form } from "react-bootstrap";

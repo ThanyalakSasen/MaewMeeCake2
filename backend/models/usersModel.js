@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto');
+const { type } = require('os');
 const Schema = mongoose.Schema
 
 const userSchema = new Schema({
@@ -69,6 +70,12 @@ const userSchema = new Schema({
   },
 
   // ===== Employee only =====
+  emp_id: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+
   emp_position: {
     type: Schema.Types.ObjectId,
     ref: 'Position',
@@ -97,14 +104,21 @@ const userSchema = new Schema({
     }
   },
 
-  employee_salary: {
+  emp_salary: {
     type: Number,
     required: function () {
-      return this.role === 'Employee'
+      return this.role === 'Employee' && this.employment_type === 'Full-time'
     }
   },
 
-  employee_status: {
+  partTimeHours: {
+    type: Number,
+    required: function () {
+      return this.role === 'Employee' && this.employment_type === 'Part-time'
+    }
+  },
+
+  emp_status: {
     type: String,
     enum: ['Active', 'Inactive'],
     default: 'Active'

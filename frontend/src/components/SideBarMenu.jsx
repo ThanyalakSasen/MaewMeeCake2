@@ -64,7 +64,7 @@ function SideBarMenu() {
       name: "จัดการพนักงาน",
       subMenu: [
         { name: "รายชื่อพนักงาน", link: "/employeeManage" },
-        { name: "มอบหมายงาน", link: "/manage-employee-permissions" },
+        { name: "จัดการสิทธิ์พนักงาน", link: "/manage-employee-permissions" },
         { name: "ตารางเวร/กะทำงาน", link: "/employee-schedule" },
       ],
     },

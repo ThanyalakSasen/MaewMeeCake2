@@ -13,6 +13,8 @@ import UpdateProfile from "./pages/UpdatePage";
 import DetailInfoOwnerAndEmployee from "./pages/DetailInfoOwnerAndEmployee";
 import UpdateInfoEmployeeForOwner from "./pages/UpdateInfoEmployeeForOwner";
 import EmployeeDeletedManage from "./pages/EmployeeDeletedManage";
+import EmployeeManage from "./pages/EmployeeManage";
+import CreateUserForAdmin from "./pages/CreateUserForAdmin";
 
 function App() {
   return (

@@ -2,6 +2,7 @@ const UserModel = require("../models/usersModel");
 const PositionModel = require("../models/positionModel");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const sendVerifyEmail = require("../utils/sendVerifyEmail");
 const passport = require("passport");
@@ -275,7 +276,7 @@ exports.login = async (req, res, next) => {
     }
     
     // หา user และดึง password มาด้วย
-    const user = await User.findOne({ 
+    const user = await UserModel.findOne({ 
   email: email.toLowerCase(), 
   isActive: true 
 }).select('+password');
@@ -698,7 +699,7 @@ exports.verifyResetToken = async (req, res) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await UserModel.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({
@@ -894,10 +895,9 @@ exports.updateProfile = exports.updateProfileCustomer;
 // @desc    สร้างผู้ใช้ใหม่ (Employee หรือ Customer) โดย Admin
 // @route   POST /api/auth/admin/create-user
 // @access  Private (Admin only)
-exports.createEmployee = async (req, res, next) => {
+exports.createEmployee = async (req, res) => {
   try {
     const {
-      emp_id,
       user_fullname,
       email,
       password,
@@ -916,13 +916,14 @@ exports.createEmployee = async (req, res, next) => {
       softDelete = false,
     } = req.body;
 
-    // Validation
+
     if (!user_fullname || !email || !password || !role) {
       return res.status(400).json({
         success: false,
         message: "กรุณากรอกข้อมูลให้ครบถ้วน",
       });
     }
+
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
@@ -930,7 +931,6 @@ exports.createEmployee = async (req, res, next) => {
       });
     }
 
-    // ตรวจสอบว่ามี email นี้แล้วหรือยัง
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -939,15 +939,14 @@ exports.createEmployee = async (req, res, next) => {
       });
     }
 
-    // เตรียมข้อมูลผู้ใช้
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const userData = {
-      emp_id,
       user_fullname,
       email,
-      password,
+      password: hashedPassword,
       authProvider,
       user_phone,
-      user_birthdate,
       role,
       isEmailVerified,
       profileCompleted,
@@ -955,12 +954,14 @@ exports.createEmployee = async (req, res, next) => {
       isActive: true,
     };
 
-    // เพิ่ม path ของรูปภาพถ้ามีการอัพโหลด
+    if (user_birthdate) {
+      userData.user_birthdate = new Date(user_birthdate);
+    }
+
     if (req.file) {
       userData.user_img = `/uploads/users/${req.file.filename}`;
     }
 
-    // ถ้าเป็น Employee ให้สร้าง emp_id และเพิ่มข้อมูลพนักงาน
     if (role === "Employee") {
       if (!emp_position || !start_working_date || !employment_type) {
         return res.status(400).json({
@@ -968,38 +969,228 @@ exports.createEmployee = async (req, res, next) => {
           message: "กรุณากรอกข้อมูลพนักงานให้ครบถ้วน",
         });
       }
-      // สร้าง emp_id
+
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
 
-      // หาลำดับพนักงานในปีนี้
       const yearPrefix = `emp${year}`;
-      const employeesThisYear = await UserModel.countDocuments({
+      console.log("Year Prefix:", yearPrefix);
+      
+      const count = await UserModel.countDocuments({
         emp_id: { $regex: `^${yearPrefix}` },
       });
+      console.log("Current employee count:", count);
 
-      // ลำดับถัดไป (เริ่มจาก 1)
-      const sequence = String(employeesThisYear + 1).padStart(3, "0");
+      const sequence = String(count + 1).padStart(3, "0");
+      const generatedEmpId = `${yearPrefix}${month}${day}${sequence}`;
+      
+      console.log("Generated emp_id:", generatedEmpId);
+      userData.emp_id = generatedEmpId;
 
-      // สร้าง emp_id รูปแบบ: emp + ปี(4) + เดือน(2) + วัน(2) + ลำดับ(3)
-      userData.emp_id = `${yearPrefix}${month}${day}${sequence}`;
       userData.emp_position = await resolvePositionId(emp_position);
-      userData.start_working_date = start_working_date;
+      userData.start_working_date = new Date(start_working_date);
       userData.employment_type = employment_type;
       userData.emp_status = emp_status;
 
-      // ถ้าเป็น Full-time ให้ใส่เงินเดือน
+      console.log("Employee data before create:", {
+        emp_id: userData.emp_id,
+        emp_position: userData.emp_position,
+        employment_type: userData.employment_type
+      });
+
       if (employment_type === "Full-time") {
-        userData.emp_salary = emp_salary;
+        if (!emp_salary) {
+          return res.status(400).json({
+            success: false,
+            message: "กรุณากรอกเงินเดือน",
+          });
+        }
+        userData.emp_salary = Number(emp_salary);
       }
+
+      if (employment_type === "Part-time") {
+        if (!partTimeHours) {
+          return res.status(400).json({
+            success: false,
+            message: "กรุณากรอกชั่วโมงทำงาน",
+          });
+        }
+        userData.partTimeHours = Number(partTimeHours);
+      }
+    }
+
+    console.log("Final userData before create:", userData);
+    const newUser = await UserModel.create(userData);
+    console.log("Created user:", {
+      id: newUser._id,
+      emp_id: newUser.emp_id,
+      email: newUser.email,
+      role: newUser.role
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "สร้างผู้ใช้สำเร็จ",
+      data: newUser,
+    });
+
+  } catch (error) {
+    console.error("Create Employee Error:", error);
+    console.error("Error details:", error.message);
+    console.error("Error stack:", error.stack);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "เกิดข้อผิดพลาดในระบบ",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// exports.createEmployee = async (req, res, next) => {
+//   try {
+//     const {
+//       emp_id,
+//       user_fullname,
+//       email,
+//       password,
+//       authProvider = "local",
+//       user_phone,
+//       user_birthdate,
+//       role,
+//       isEmailVerified = true,
+//       profileCompleted = true,
+//       emp_position,
+//       start_working_date,
+//       employment_type,
+//       emp_salary,
+//       partTimeHours,
+//       emp_status = "Active",
+//       softDelete = false,
+//     } = req.body;
+
+//     // Validation
+//     if (!user_fullname || !email || !password || !role) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "กรุณากรอกข้อมูลให้ครบถ้วน",
+//       });
+//     }
+//     if (password.length < 6) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+//       });
+//     }
+
+//     // ตรวจสอบว่ามี email นี้แล้วหรือยัง
+//     const existingUser = await UserModel.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "อีเมลนี้ถูกใช้งานแล้ว",
+//       });
+//     }
+
+//     // เตรียมข้อมูลผู้ใช้
+//     const userData = {
+//       emp_id,
+//       user_fullname,
+//       email,
+//       password,
+//       authProvider,
+//       user_phone,
+//       user_birthdate,
+//       role,
+//       isEmailVerified,
+//       profileCompleted,
+//       softDelete,
+//       isActive: true,
+//     };
+
+//     // เพิ่ม path ของรูปภาพถ้ามีการอัพโหลด
+//     if (req.file) {
+//       userData.user_img = `/uploads/users/${req.file.filename}`;
+//     }
+
+//     // ถ้าเป็น Employee ให้สร้าง emp_id และเพิ่มข้อมูลพนักงาน
+//     if (role === "Employee") {
+//       if (!emp_position || !start_working_date || !employment_type) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "กรุณากรอกข้อมูลพนักงานให้ครบถ้วน",
+//         });
+//       }
+//       // สร้าง emp_id
+//       const now = new Date();
+//       const year = now.getFullYear();
+//       const month = String(now.getMonth() + 1).padStart(2, "0");
+//       const day = String(now.getDate()).padStart(2, "0");
+
+//       // หาลำดับพนักงานในปีนี้
+//       const yearPrefix = `emp${year}`;
+//       const employeesThisYear = await UserModel.countDocuments({
+//         emp_id: { $regex: `^${yearPrefix}` },
+//       });
+
+//       // ลำดับถัดไป (เริ่มจาก 1)
+//       const sequence = String(employeesThisYear + 1).padStart(3, "0");
+
+//       // สร้าง emp_id รูปแบบ: emp + ปี(4) + เดือน(2) + วัน(2) + ลำดับ(3)
+//       userData.emp_id = `${yearPrefix}${month}${day}${sequence}`;
+//       userData.emp_position = await resolvePositionId(emp_position);
+//       userData.start_working_date = start_working_date;
+//       userData.employment_type = employment_type;
+//       userData.emp_status = emp_status;
+
+//       // ถ้าเป็น Full-time ให้ใส่เงินเดือน
+//       if (employment_type === "Full-time") {
+//         userData.emp_salary = emp_salary;
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Update Profile Error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'เกิดข้อผิดพลาด'
+//     });
+//   }
+// };
+
+// @desc    ดึงข้อมูลพนักงานทั้งหมด
+// @route   GET /api/auth/admin/employees
+// @access  Private (Admin only)
+exports.getEmployees = async (req, res, next) => {
+  try {
+    console.log("=== GET /api/auth/admin/employees ===");
+    console.log("Fetching employees...");
+    
+    const employees = await UserModel.find({
+      role: "Employee",
+      $or: [
+        { softDelete: false },
+        { softDelete: { $exists: false } },
+        { softDelete: null }
+      ]
+    })
+      .select("-password")
+      .populate("emp_position")
+      .sort({ createdAt: -1 });
+
+    console.log("Employees found:", employees.length);
+
+    res.status(200).json({
+      success: true,
+      count: employees.length,
+      data: employees,
     });
   } catch (error) {
-    console.error('Update Profile Error:', error);
+    console.error("Get Employees Error:", error);
+    console.error("Error details:", error.message);
     res.status(500).json({
       success: false,
-      message: 'เกิดข้อผิดพลาด'
+      message: error.message || "เกิดข้อผิดพลาดในการดึงข้อมูลพนักงาน",
     });
   }
 };

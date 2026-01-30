@@ -2,17 +2,13 @@
 
 frontend 
 
-    npm install react-router-dom react-bootstrap bootstrap axios react-datepicker date-fns mdb-react-ui-kit @fortawesome/fontawesome-free
-
-
-
     1. npm install 
     2. npm install react-router-dom 
     3. npm install react-bootstrap bootstrap 
     4. npm install axios 
     5. npm install react-datepicker 
     6. npm install @fortawesome/fontawesome-free
-    7. npm install @react-oauth/google sweetalert2
+    7. npm install @react-oauth/google
     8. npm install @coreui/react @coreui/icons @coreui/icons-react
     9. npm install react-icons
     10. npx create-react-app random-password-generator
@@ -34,8 +30,10 @@ backend
     5. npm install passport passport-local 
     6. npm install express passport passport-local passport-google-oauth20 
     7. npm install helmet 
-    8. npm install google-auth-library 9. npm install nodemailer
-    9. npm install jsonwebtoken
+    8. npm install google-auth-library 
+    9. npm install nodemailer
+    10. npm install jsonwebtoken
+    11. npm install multer
 
 
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { authAPI } from "../utils/api";
 import InputDate from "./inputDate";
-import Select from "./select";
+import { SelectInput } from "./selectInput";
 import ButtonSubmit from "./button";
 import axios from "axios";
 import { Col, Container, Row, Form } from "react-bootstrap";

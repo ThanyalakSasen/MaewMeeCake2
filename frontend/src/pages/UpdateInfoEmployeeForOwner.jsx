@@ -12,7 +12,7 @@ import {
 import { InputField } from "../components/InputField";
 import InputDate from "../components/inputDate";
 import SideBarMenu from "../components/SideBarMenu";
-import { SelectInput } from "../components/select";
+import { SelectInput } from "../components/selectInput";
 import ImageUpload from "../components/imageUploadComponent";
 import NavBar from "../components/NavBar";
 import api from "../services/api";

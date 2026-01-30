@@ -23,15 +23,26 @@ export default function EmployeeManage() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
+      console.log("Fetching employees...");
+      
       const response = await api.get("/api/auth/admin/employees");
+      console.log("Response:", response);
+      console.log("Response data:", response.data);
+      
       if (response.data.success) {
+        console.log("Employees data:", response.data.data);
+        console.log("Number of employees:", response.data.data.length);
+        
         // Filter เฉพาะพนักงานที่ไม่ได้ถูก soft delete
         const activeEmployees = response.data.data.filter(
-          (emp) => emp.softDeleted !== true
+          (emp) => emp.softDelete !== true
         );
+        console.log("Active employees after filter:", activeEmployees.length);
         setEmployees(activeEmployees);
       }
     } catch (err) {
+      console.error("Fetch Employees Error:", err);
+      console.error("Error response:", err.response);
       setError(err.response?.data?.message || "เกิดข้อผิดพลาดในการดึงข้อมูล");
     } finally {
       setLoading(false);

@@ -1,11 +1,12 @@
 import { Container, Navbar, Nav, Dropdown, Spinner } from "react-bootstrap";
 import { authAPI } from "../services/authService";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-
-
-export default function NavBar({ user }) {
+export default function NavBar({ titleMain }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const handleLogout = async () => {
     try {
       await authAPI.logout();
@@ -18,6 +19,7 @@ export default function NavBar({ user }) {
       navigate("/login", { replace: true });
     }
   };
+  const title = titleMain || "MeawMee Cake";
 
 return (
   <Navbar
@@ -26,11 +28,11 @@ return (
     style={{
       boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
       padding: "12px 0",
-      margin:"2% 3% 1%",
+      margin:"2%",
       borderRadius: "10px",
     }}
   >
-    <Container fluid style={{ padding: "0 40px" }}>
+    <Container style={{ padding: "0 40px" }}>
       <Navbar.Brand
         style={{
           fontWeight: "bold",
@@ -40,8 +42,7 @@ return (
           gap: "8px",
         }}
       >
-        <span>🎂</span>
-        <span>MeawMee Cake</span>
+        <span>{title}</span>
       </Navbar.Brand>
 
       <Nav className="ms-auto" style={{ alignItems: "center" }}>
@@ -137,14 +138,6 @@ return (
             >
               <span style={{ marginRight: "8px" }}>👤</span>
               โปรไฟล์
-            </Dropdown.Item>
-
-            <Dropdown.Item
-              onClick={() => navigate("/settings")}
-              style={{ padding: "12px 16px" }}
-            >
-              <span style={{ marginRight: "8px" }}>⚙️</span>
-              ตั้งค่า
             </Dropdown.Item>
 
             <Dropdown.Divider />
