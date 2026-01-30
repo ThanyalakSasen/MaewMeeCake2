@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 
 import InputDate from "../components/inputDate";
 import { InputField } from "../components/InputField";
-import { Select } from "../components/select";
+import { SelectInput } from "../components/select";
 import ButtonSubmit from "../components/button";
 import loginPicture from "../assets/pictures/LoginRegisterPicture.png";
 
@@ -256,7 +256,7 @@ export default function UpdatePage() {
                     }}
                   >
                     <div style={{ flex: 1 }}>
-                      <Select
+                      <SelectInput
                         options={allergyOptions}
                         value={selectedAllergy}
                         onChange={(e) => setSelectedAllergy(e.target.value)}

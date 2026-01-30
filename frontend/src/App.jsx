@@ -5,11 +5,14 @@ import VerifyEmailPage from "./pages/VerifyEmailPage";
 import Dashboard from "./pages/DashboardPage";
 import ProtectedRoute from './components/ProtectedRoute';
 import "react-datepicker/dist/react-datepicker.css";
-import AuthCallback from './pages/AuthCallback';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import CompleteProfile from './pages/CompleteProfile';
-import UpdateProfile from './pages/UpdatePage'
+import AuthCallback from "./pages/AuthCallback";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import CompleteProfile from "./pages/CompleteProfile";
+import UpdateProfile from "./pages/UpdatePage";
+import DetailInfoOwnerAndEmployee from "./pages/DetailInfoOwnerAndEmployee";
+import UpdateInfoEmployeeForOwner from "./pages/UpdateInfoEmployeeForOwner";
+import EmployeeDeletedManage from "./pages/EmployeeDeletedManage";
 
 function App() {
   return (
@@ -49,6 +52,52 @@ function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Employee Manage (Protected) */}
+      <Route
+        path="/employeeManage"
+        element={
+          <ProtectedRoute>
+            <EmployeeManage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Create User For Admin (Protected) */}
+      <Route
+        path="/create-employee"
+        element={
+          <ProtectedRoute>
+            <CreateUserForAdmin />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* View Employee Detail (Protected) */}
+      <Route
+        path="/view-info-employee/:userId"
+        element={
+          <ProtectedRoute>
+            <DetailInfoOwnerAndEmployee />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/edit-info-employee/:userId"
+        element={
+          <ProtectedRoute>
+            <UpdateInfoEmployeeForOwner />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/deleted-employees"
+        element={
+          <ProtectedRoute>
+            <EmployeeDeletedManage />
           </ProtectedRoute>
         }
       />

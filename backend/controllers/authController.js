@@ -1,8 +1,28 @@
-const User = require('../models/usersModel');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const sendVerifyEmail = require('../utils/sendVerifyEmail');
-const passport = require('passport');
+const UserModel = require("../models/usersModel");
+const PositionModel = require("../models/positionModel");
+const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const sendVerifyEmail = require("../utils/sendVerifyEmail");
+const passport = require("passport");
+
+const resolvePositionId = async (emp_position) => {
+  if (!emp_position) return undefined;
+  if (mongoose.Types.ObjectId.isValid(emp_position)) return emp_position;
+
+  const existingPosition = await PositionModel.findOne({
+    position_name: emp_position,
+    deletedAt: null,
+  });
+
+  if (existingPosition) return existingPosition._id;
+
+  const createdPosition = await PositionModel.create({
+    position_name: emp_position,
+  });
+
+  return createdPosition._id;
+};
 
 // สร้าง JWT Token
 const generateToken = (id) => {
@@ -827,7 +847,7 @@ exports.completeProfile = async (req, res, next) => {
 // @desc    อัพเดตข้อมูลผู้ใช้ (สำหรับ Google Login)
 // @route   PUT /api/auth/update-profile
 // @access  Private
-exports.updateProfile = async (req, res, next) => {
+exports.updateProfileCustomer = async (req, res, next) => {
   try {
     const { user_phone, user_birthdate, user_allergies } = req.body;
     
@@ -856,7 +876,123 @@ exports.updateProfile = async (req, res, next) => {
         name: user.user_fullname,
         phone: user.user_phone,
         birthDate: user.user_birthdate,
-        allergies: user.user_allergies
+        allergies: user.user_allergies,
+      },
+    });
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "เกิดข้อผิดพลาด",
+    });
+  }
+};
+
+// Backward-compatible alias for route handler naming
+exports.updateProfile = exports.updateProfileCustomer;
+
+// @desc    สร้างผู้ใช้ใหม่ (Employee หรือ Customer) โดย Admin
+// @route   POST /api/auth/admin/create-user
+// @access  Private (Admin only)
+exports.createEmployee = async (req, res, next) => {
+  try {
+    const {
+      emp_id,
+      user_fullname,
+      email,
+      password,
+      authProvider = "local",
+      user_phone,
+      user_birthdate,
+      role,
+      isEmailVerified = true,
+      profileCompleted = true,
+      emp_position,
+      start_working_date,
+      employment_type,
+      emp_salary,
+      partTimeHours,
+      emp_status = "Active",
+      softDelete = false,
+    } = req.body;
+
+    // Validation
+    if (!user_fullname || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณากรอกข้อมูลให้ครบถ้วน",
+      });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+      });
+    }
+
+    // ตรวจสอบว่ามี email นี้แล้วหรือยัง
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "อีเมลนี้ถูกใช้งานแล้ว",
+      });
+    }
+
+    // เตรียมข้อมูลผู้ใช้
+    const userData = {
+      emp_id,
+      user_fullname,
+      email,
+      password,
+      authProvider,
+      user_phone,
+      user_birthdate,
+      role,
+      isEmailVerified,
+      profileCompleted,
+      softDelete,
+      isActive: true,
+    };
+
+    // เพิ่ม path ของรูปภาพถ้ามีการอัพโหลด
+    if (req.file) {
+      userData.user_img = `/uploads/users/${req.file.filename}`;
+    }
+
+    // ถ้าเป็น Employee ให้สร้าง emp_id และเพิ่มข้อมูลพนักงาน
+    if (role === "Employee") {
+      if (!emp_position || !start_working_date || !employment_type) {
+        return res.status(400).json({
+          success: false,
+          message: "กรุณากรอกข้อมูลพนักงานให้ครบถ้วน",
+        });
+      }
+      // สร้าง emp_id
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+
+      // หาลำดับพนักงานในปีนี้
+      const yearPrefix = `emp${year}`;
+      const employeesThisYear = await UserModel.countDocuments({
+        emp_id: { $regex: `^${yearPrefix}` },
+      });
+
+      // ลำดับถัดไป (เริ่มจาก 1)
+      const sequence = String(employeesThisYear + 1).padStart(3, "0");
+
+      // สร้าง emp_id รูปแบบ: emp + ปี(4) + เดือน(2) + วัน(2) + ลำดับ(3)
+      userData.emp_id = `${yearPrefix}${month}${day}${sequence}`;
+      userData.emp_position = await resolvePositionId(emp_position);
+      userData.start_working_date = start_working_date;
+      userData.employment_type = employment_type;
+      userData.emp_status = emp_status;
+
+      // ถ้าเป็น Full-time ให้ใส่เงินเดือน
+      if (employment_type === "Full-time") {
+        userData.emp_salary = emp_salary;
       }
     });
   } catch (error) {
@@ -864,6 +1000,198 @@ exports.updateProfile = async (req, res, next) => {
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาด'
+    });
+  }
+};
+
+// @desc    ดึงข้อมูลพนักงานที่ถูกลบ (Soft deleted)
+// @route   GET /api/auth/admin/deleted-employees
+// @access  Private (Admin only)
+exports.getDeletedEmployees = async (req, res, next) => {
+  try {
+    const employees = await UserModel.find({
+      role: "Employee",
+      softDelete: true,
+    })
+      .select("-password")
+      .sort({ deletedAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: employees.length,
+      data: employees,
+    });
+  } catch (error) {
+    console.error("Get Deleted Employees Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "เกิดข้อผิดพลาดในการดึงข้อมูลพนักงานที่ถูกลบ",
+    });
+  }
+};
+
+exports.getEmployeeById = async (req, res, next) => {
+  try {
+    const employee = await UserModel.findById(req.params.id).select("-password");
+    if (!employee || employee.role !== "Employee" || !employee.isActive || employee.softDelete) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบพนักงาน",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      data: employee,
+    });
+  } catch (error) {
+    console.error("Get Employee By ID Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "เกิดข้อผิดพลาดในการดึงข้อมูลพนักงาน",
+    });
+  }
+};
+
+exports.updateEmployee = async (req, res, next) => {
+  try {
+    const employee = await UserModel.findById(req.params.id);
+    if (!employee || employee.role !== "Employee" || !employee.isActive || employee.softDelete) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบพนักงาน",
+      });
+    }
+    const {
+      user_fullname,
+      email,
+      user_phone,
+      user_birthdate,
+      emp_position,
+      start_working_date,
+      last_working_date = null,
+      employment_type,
+      emp_salary,
+      partTimeHours,
+      emp_status,
+    } = req.body;
+    // อัพเดตข้อมูล
+    if (user_fullname) employee.user_fullname = user_fullname;
+    if (email) employee.email = email;
+    if (user_phone) employee.user_phone = user_phone;
+    if (user_birthdate) employee.user_birthdate = user_birthdate; 
+    if (emp_position) employee.emp_position = await resolvePositionId(emp_position);
+    if (start_working_date) employee.start_working_date = start_working_date;
+    if (last_working_date !== undefined) employee.last_working_date = last_working_date;
+    if (employment_type) employee.employment_type = employment_type;
+    if (emp_status) employee.emp_status = emp_status;
+    if (employment_type === "Full-time" && emp_salary) {
+      employee.emp_salary = emp_salary;
+      employee.partTimeHours = undefined; // ล้างชั่วโมงทำงานถ้าเปลี่ยนเป็น Full-time
+    }
+    if (employment_type === "Part-time" && partTimeHours) {
+      employee.partTimeHours = partTimeHours;
+      employee.emp_salary = undefined; // ล้างเงินเดือนถ้าเปลี่ยนเป็น Part-time
+    }
+    // บันทึกการเปลี่ยนแปลง
+    await employee.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      message: "อัพเดตข้อมูลพนักงานสำเร็จ",
+      data: employee,
+    });
+  }
+  catch (error) {
+    console.error("Update Employee Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "เกิดข้อผิดพลาดในการอัพเดตข้อมูลพนักงาน",
+    });
+  }
+};
+
+// @desc    ลบพนักงาน (Soft delete)
+// @route   DELETE /api/auth/admin/delete-employee/:id
+// @access  Private (Admin only)
+exports.deleteEmployee = async (req, res, next) => {
+  try {
+    const employee = await UserModel.findById(req.params.id);
+
+    if (!employee || employee.role !== "Employee" || !employee.isActive || employee.softDelete) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบพนักงาน",
+      });
+    }
+
+    employee.softDelete = true;
+    employee.isActive = false;
+    employee.deletedAt = new Date();
+
+    await employee.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      message: "ลบพนักงานสำเร็จ",
+    });
+  } catch (error) {
+    console.error("Delete Employee Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "เกิดข้อผิดพลาดในการลบพนักงาน",
+    });
+  }
+};
+
+exports.hardDeletedEmployee = async (req, res, next) => {
+  try {
+    const employee = await UserModel.findById(req.params.id);
+    if (!employee || employee.role !== "Employee" || !employee.softDelete) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบพนักงานที่ถูกลบ",
+      });
+    }
+    await employee.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "ลบพนักงานถาวรสำเร็จ",
+    });
+  }
+  catch (error) {
+    console.error("Hard Delete Employee Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "เกิดข้อผิดพลาดในการลบพนักงานถาวร",
+    });
+  }
+};
+
+exports.restoreEmployee = async (req, res, next) => {
+  try {
+    const employee = await UserModel.findById(req.params.id);
+    if (!employee || employee.role !== "Employee" || !employee.softDelete) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบพนักงานที่ถูกลบ",
+      });
+    }
+    employee.softDelete = false;
+    employee.isActive = true;
+    employee.deletedAt = undefined;
+    await employee.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      message: "กู้คืนพนักงานสำเร็จ",
+    });
+  }
+  catch (error) {
+    console.error("Restore Employee Error:", error);
+    res.status(500).json({  
+      success: false,
+      message: error.message || "เกิดข้อผิดพลาดในการกู้คืนพนักงาน",
     });
   }
 };

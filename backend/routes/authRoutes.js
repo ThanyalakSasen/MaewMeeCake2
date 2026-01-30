@@ -27,4 +27,18 @@ router.post("/logout", protect, authCtrl.logout);
 router.put('/complete-profile', protect, authCtrl.completeProfile);  // ✅ กรอกข้อมูลครั้งแรก
 router.put('/update-profile', protect, authCtrl.updateProfile);      // ✅ แก้ไขข้อมูลภายหลัง
 
+
+// Admin routes (Protected)
+router.post('/admin/create-user', protect, upload.single('user_img'), authCtrl.createEmployee);
+router.get('/admin/employees', protect, authCtrl.getEmployees);
+router.get('/admin/deleted-employees', protect, authCtrl.getDeletedEmployees);
+router.get('/admin/employee/:id', protect, authCtrl.getEmployeeById);
+router.put('/admin/update-info-employee-for-admin/:id', protect, upload.single('user_img'), authCtrl.updateEmployee);
+router.delete('/admin/delete-employee/:id', protect, authCtrl.deleteEmployee);
+router.put('/admin/employees/:id/restore', protect, authCtrl.restoreEmployee);
+router.delete('/admin/employees/:id/hardDeleted', protect, authCtrl.hardDeletedEmployee);
+
+
+
+
 module.exports = router;
