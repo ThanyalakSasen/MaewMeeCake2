@@ -1,17 +1,10 @@
-// export default function AdminDashboardComponent() {
-//     return (
-//         <>AdminDashboardComponent</>
-//     );
-// }
-
-// AdminDashboardComponent.jsx
-import { Card, Row, Col } from "react-bootstrap";
+import { Card, Row, Col, Container } from "react-bootstrap";
 
 export default function AdminDashboardComponent() {
   return (
     <div>
       <h2 style={{ marginBottom: "24px", fontWeight: "bold" }}>
-        👑 แดชบอร์ดเจ้าของร้าน
+        แดชบอร์ดเจ้าของร้าน
       </h2>
       
       <p style={{ color: "#666", marginBottom: "32px" }}>

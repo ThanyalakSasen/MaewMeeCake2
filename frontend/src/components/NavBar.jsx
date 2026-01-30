@@ -26,6 +26,8 @@ return (
     style={{
       boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
       padding: "12px 0",
+      margin:"2% 3% 1%",
+      borderRadius: "10px",
     }}
   >
     <Container fluid style={{ padding: "0 40px" }}>
